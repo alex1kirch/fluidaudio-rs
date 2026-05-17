@@ -85,6 +85,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 This is ideal for meeting transcription apps, voice assistants, and other real-time scenarios where writing to temporary files adds unnecessary overhead.
 
+#### Choosing the Parakeet variant: v3 (default, multilingual) vs. v2 (English-only)
+
+`init_asr()` loads **Parakeet TDT 0.6B v3** — multilingual coverage across ~25
+languages. For applications that only need English and prefer the smaller
+download footprint, or that need bit-for-bit compatibility with the legacy
+v2 vocabulary (`blank_id = 1024`), call `init_asr_v2()` instead:
+
+```rust
+use fluidaudio_rs::FluidAudio;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let audio = FluidAudio::new()?;
+
+    // English-only Parakeet TDT 0.6B v2 (~640MB CoreML bundle)
+    audio.init_asr_v2()?;
+
+    let result = audio.transcribe_file("english.wav")?;
+    println!("Text: {}", result.text);
+    Ok(())
+}
+```
+
+The two init paths are mutually exclusive on a single `FluidAudio` instance —
+the second call overwrites the first. All `transcribe_file`,
+`transcribe_samples`, and `is_asr_available` helpers behave identically once
+initialized; only the underlying weights differ.
+
 ### Multilingual ASR with Qwen3 (Japanese, Chinese, Vietnamese, etc.)
 
 Qwen3-ASR provides excellent multilingual support, especially for East Asian and Southeast Asian languages. Perfect for applications that need Japanese, Chinese, Vietnamese, or Korean transcription.

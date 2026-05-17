@@ -82,12 +82,42 @@ impl FluidAudio {
 
     // ========== ASR Methods ==========
 
-    /// Initialize the ASR (Automatic Speech Recognition) engine
+    /// Initialize the ASR (Automatic Speech Recognition) engine using
+    /// **Parakeet TDT 0.6B v3** — the multilingual default (~25 languages).
     ///
     /// This downloads and loads the ASR models. First run may take 20-30 seconds
     /// as models are compiled for the Neural Engine.
+    ///
+    /// For the legacy English-only **v2** weights, use [`init_asr_v2`] instead.
+    /// The two variants are mutually exclusive on a given `FluidAudio` instance:
+    /// the second call overwrites the first.
+    ///
+    /// [`init_asr_v2`]: Self::init_asr_v2
     pub fn init_asr(&self) -> Result<(), FluidAudioError> {
         self.bridge.initialize_asr().map_err(FluidAudioError::from)
+    }
+
+    /// Initialize the ASR engine using **Parakeet TDT 0.6B v2** — the legacy
+    /// English-only weights (~640MB CoreML bundle).
+    ///
+    /// Use this when:
+    ///
+    /// - You only need English transcription and prefer the smaller download
+    ///   footprint over v3's multilingual coverage, **or**
+    /// - You want bit-for-bit compatibility with the v2 vocabulary
+    ///   (`blank_id = 1024`) for downstream tooling that was tuned against v2.
+    ///
+    /// All [`transcribe_file`], [`transcribe_samples`], and [`is_asr_available`]
+    /// helpers behave identically once initialized — only the underlying weights
+    /// differ.
+    ///
+    /// [`transcribe_file`]: Self::transcribe_file
+    /// [`transcribe_samples`]: Self::transcribe_samples
+    /// [`is_asr_available`]: Self::is_asr_available
+    pub fn init_asr_v2(&self) -> Result<(), FluidAudioError> {
+        self.bridge
+            .initialize_asr_v2()
+            .map_err(FluidAudioError::from)
     }
 
     /// Transcribe an audio file

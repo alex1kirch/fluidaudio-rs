@@ -29,12 +29,25 @@ class FluidAudioBridgeInternal {
     init() {}
 
     func initializeAsr() throws {
+        try initializeAsrInternal(version: .v3)
+    }
+
+    /// Initialize the ASR pipeline with the legacy English-only Parakeet TDT 0.6B
+    /// **v2** weights (~640MB CoreML bundle). Use this when the host needs the
+    /// blank-id=1024 vocabulary or wants the smaller download footprint, and is
+    /// happy to forfeit v3's multilingual coverage. v3 remains the default for
+    /// `initializeAsr()`.
+    func initializeAsrV2() throws {
+        try initializeAsrInternal(version: .v2)
+    }
+
+    private func initializeAsrInternal(version: AsrModelVersion) throws {
         let semaphore = DispatchSemaphore(value: 0)
         var initError: Error?
 
         Task {
             do {
-                let models = try await AsrModels.downloadAndLoad()
+                let models = try await AsrModels.downloadAndLoad(version: version)
                 self.asrModels = models
 
                 let manager = AsrManager()
@@ -673,6 +686,19 @@ public func fluidaudio_initialize_asr(_ ptr: UnsafeMutableRawPointer?) -> Int32 
         return 0
     } catch {
         print("ASR init error: \(error)")
+        return -1
+    }
+}
+
+@_cdecl("fluidaudio_initialize_asr_v2")
+public func fluidaudio_initialize_asr_v2(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr = ptr else { return -1 }
+    let bridge = Unmanaged<FluidAudioBridgeInternal>.fromOpaque(ptr).takeUnretainedValue()
+    do {
+        try bridge.initializeAsrV2()
+        return 0
+    } catch {
+        print("ASR v2 init error: \(error)")
         return -1
     }
 }

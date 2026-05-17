@@ -175,3 +175,20 @@ fn asr_transcribes_silence_buffer() {
     let result = audio.transcribe_samples(&samples).expect("transcribe");
     assert!(result.duration >= 1.9 && result.duration <= 2.1);
 }
+
+/// Same end-to-end sanity check as `asr_transcribes_silence_buffer`, but
+/// initializes with the legacy English-only **Parakeet TDT 0.6B v2** weights
+/// to verify that the v2 init path returns successfully and that the same
+/// transcribe surface works once initialized.
+#[test]
+#[ignore = "downloads Parakeet TDT v2 models (~640MB) and triggers ANE compilation"]
+fn asr_v2_transcribes_silence_buffer() {
+    let audio = FluidAudio::new().expect("bridge creation");
+    audio.init_asr_v2().expect("ASR v2 init");
+    assert!(audio.is_asr_available());
+
+    // 2 seconds of silence at 16kHz mono.
+    let samples = vec![0.0_f32; 16_000 * 2];
+    let result = audio.transcribe_samples(&samples).expect("transcribe");
+    assert!(result.duration >= 1.9 && result.duration <= 2.1);
+}
